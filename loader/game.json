@@ -1,2 +1,3 @@
-{"//_comment1": "it will be-> (gameID) : the name of lua in /robloxscript/games/"},
-{"//_comment2": "ex. 100000000000 : example.lua -> and it will find the lua file in robloxscript/games/"}
+{
+  "100000000000": "example.lua"
+}
