@@ -1,6 +1,22 @@
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local TextChatService = game:GetService("TextChatService")
 local LocalPlayer = Players.LocalPlayer
+
+local autoEEnabled = true
+local autoInteractDistance = 20
+
+local function notify(title, text)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = title,
+            Text = text,
+            Duration = 2.5
+        })
+    end)
+end
 
 local function setupInstantCook()
     local playerScripts = LocalPlayer:WaitForChild("PlayerScripts")
@@ -59,5 +75,52 @@ local function setupInstantInteract()
     end)
 end
 
+local function handleCommand(msg)
+    local cleaned = string.lower(msg)
+    if cleaned == "!e" or cleaned == "!e true" or cleaned == "!e on" then
+        autoEEnabled = true
+        notify("Auto [E] Loop", "Status: ENABLED")
+    elseif cleaned == "!e false" or cleaned == "!e off" then
+        autoEEnabled = false
+        notify("Auto [E] Loop", "Status: DISABLED")
+    end
+end
+
+if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+    TextChatService.MessageReceived:Connect(function(textChatMessage)
+        if textChatMessage.TextSource and textChatMessage.TextSource.UserId == LocalPlayer.UserId then
+            handleCommand(textChatMessage.Text)
+        end
+    end)
+else
+    LocalPlayer.Chatted:Connect(function(msg)
+        handleCommand(msg)
+    end)
+end
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if autoEEnabled then
+            local character = LocalPlayer.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local rootPos = character.HumanoidRootPart.Position
+                for _, prompt in ipairs(workspace:GetDescendants()) do
+                    if prompt:IsA("ProximityPrompt") and prompt.Enabled then
+                        local parent = prompt.Parent
+                        if parent and parent:IsA("BasePart") then
+                            local dist = (parent.Position - rootPos).Magnitude
+                            if dist <= (prompt.MaxActivationDistance or autoInteractDistance) then
+                                fireproximityprompt(prompt)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
 task.spawn(setupInstantCook)
 task.spawn(setupInstantInteract)
+notify("Auto E & Instant Cook", "Ready. Type '!e' or '!e false' in chat.")
