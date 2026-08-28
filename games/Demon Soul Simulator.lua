@@ -3,9 +3,11 @@ local Players = game:GetService("Players")
 local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
 local LocalPlayer = Players.LocalPlayer
 
 local fastAttack = false
+local comboMode = "Combo (1-4)"
 local spamSkills = false
 local selectedSkillMode = "All Skills"
 local autoSouls = false
@@ -14,6 +16,7 @@ local burstDrawCount = 5
 local attackInterval = 0
 local customWalkSpeed = 16
 local speedHackEnabled = false
+local antiAfkEnabled = true
 
 local remoteEvents = ReplicatedStorage:WaitForChild("RemoteEvents", 10)
 local generalAttack = remoteEvents and remoteEvents:FindFirstChild("GeneralAttack")
@@ -21,6 +24,14 @@ local skillAttack = remoteEvents and remoteEvents:FindFirstChild("SkillAttack")
 local drawRole = remoteEvents and remoteEvents:FindFirstChild("DrawRole")
 local addSoul = ReplicatedStorage:FindFirstChild("AddSoul")
 local soulsFolder = Workspace:FindFirstChild("Souls")
+
+LocalPlayer.Idled:Connect(function()
+    if antiAfkEnabled then
+        VirtualUser:Button2Down(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), Workspace.CurrentCamera.CFrame)
+    end
+end)
 
 RunService.Stepped:Connect(function()
     local character = LocalPlayer.Character
@@ -44,7 +55,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local Window = Rayfield:CreateWindow({
-    Name = "0xseanlee HUB - For Demon Soul",
+    Name = "0xseanlee HUB - Demon Soul",
     LoadingTitle = "Initializing...",
     LoadingSubtitle = "by 0xseanlee",
     ConfigurationSaving = { Enabled = false },
@@ -54,6 +65,7 @@ local Window = Rayfield:CreateWindow({
 local CombatTab = Window:CreateTab("Combat & Movement", 4483362458)
 local FarmTab = Window:CreateTab("Farming", 4483362458)
 local GachaTab = Window:CreateTab("Gacha", 4483362458)
+local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 CombatTab:CreateSection("Movement")
 
@@ -88,11 +100,22 @@ CombatTab:CreateSlider({
 CombatTab:CreateSection("Attack Controls")
 
 CombatTab:CreateToggle({
-    Name = "Fast Combo Attack (1-4)",
+    Name = "Fast Attack",
     CurrentValue = false,
     Flag = "FastAttackToggle",
     Callback = function(Value)
         fastAttack = Value
+    end
+})
+
+CombatTab:CreateDropdown({
+    Name = "Attack Pattern",
+    Options = {"Combo (1-4)", "Heavy Hit Only (4)", "Light Hit Only (1)"},
+    CurrentOption = {"Combo (1-4)"},
+    MultipleOptions = false,
+    Flag = "AttackPatternDropdown",
+    Callback = function(Option)
+        comboMode = type(Option) == "table" and Option[1] or Option
     end
 })
 
@@ -162,7 +185,19 @@ GachaTab:CreateToggle({
     end
 })
 
+MiscTab:CreateSection("AFK Settings")
+
+MiscTab:CreateToggle({
+    Name = "Anti-AFK Disconnect",
+    CurrentValue = true,
+    Flag = "AntiAfkToggle",
+    Callback = function(Value)
+        antiAfkEnabled = Value
+    end
+})
+
 task.spawn(function()
+    local comboIndex = 1
     while true do
         if attackInterval > 0 then
             task.wait(attackInterval)
@@ -170,13 +205,20 @@ task.spawn(function()
             task.wait()
         end
 
-
         if fastAttack and generalAttack then
-            pcall(function()
-                generalAttack:FireServer(4)
-            end)
-        end
+            local attackArg = comboIndex
+            if comboMode == "Heavy Hit Only (4)" then
+                attackArg = 4
+            elseif comboMode == "Light Hit Only (1)" then
+                attackArg = 1
+            end
 
+            pcall(function()
+                generalAttack:FireServer(attackArg)
+            end)
+
+            comboIndex = (comboIndex % 4) + 1
+        end
 
         if spamSkills and skillAttack then
             if selectedSkillMode == "All Skills" then
@@ -194,7 +236,6 @@ task.spawn(function()
         end
     end
 end)
-
 
 task.spawn(function()
     while true do
