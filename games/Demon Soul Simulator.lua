@@ -163,7 +163,6 @@ GachaTab:CreateToggle({
 })
 
 task.spawn(function()
-    local combo = 1
     while true do
         if attackInterval > 0 then
             task.wait(attackInterval)
@@ -171,12 +170,13 @@ task.spawn(function()
             task.wait()
         end
 
+
         if fastAttack and generalAttack then
             pcall(function()
-                generalAttack:FireServer(combo)
+                generalAttack:FireServer(4)
             end)
-            combo = (combo % 4) + 1
         end
+
 
         if spamSkills and skillAttack then
             if selectedSkillMode == "All Skills" then
@@ -194,6 +194,7 @@ task.spawn(function()
         end
     end
 end)
+
 
 task.spawn(function()
     while true do
