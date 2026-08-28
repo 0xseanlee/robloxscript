@@ -44,7 +44,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 local Window = Rayfield:CreateWindow({
-    Name = "Demon Soul Master Hub",
+    Name = "0xseanlee HUB - For Demon Soul",
     LoadingTitle = "Initializing...",
     LoadingSubtitle = "by 0xseanlee",
     ConfigurationSaving = { Enabled = false },
