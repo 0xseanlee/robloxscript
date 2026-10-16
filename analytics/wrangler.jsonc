@@ -1,0 +1,11 @@
+{
+  "name": "roblox-analytics",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-17",
+  "observability": { "enabled": false },
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "roblox-analytics-db",
+    "database_id": "e8b44e8e-a720-4aab-9080-30462d9444b9"
+  }]
+}

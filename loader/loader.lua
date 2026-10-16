@@ -4,6 +4,19 @@ local GameId = tostring(game.GameId)
 
 local BaseUrl = "https://raw.githubusercontent.com/0xseanlee/robloxscript/main"
 
+local function report(eventName)
+    task.spawn(function()
+        pcall(function()
+            local environment = (getgenv and getgenv()) or _G
+            if environment.ROBLOX_ANALYTICS_DISABLED then return end
+            local track = loadstring(game:HttpGet(BaseUrl .. "/analytics/client.lua"))()
+            track("loader", eventName)
+        end)
+    end)
+end
+
+report("loader_started")
+
 local function request(url)
     return game:HttpGet(url, true)
 end
@@ -13,6 +26,7 @@ local success, response = pcall(function()
 end)
 
 if not success or not response then
+    report("load_failed")
     return
 end
 
@@ -21,6 +35,7 @@ local parsed, games = pcall(function()
 end)
 
 if not parsed or type(games) ~= "table" then
+    report("load_failed")
     return
 end
 
@@ -35,7 +50,16 @@ if targetScript then
     if scriptSuccess and scriptContent then
         local exec, err = loadstring(scriptContent)
         if exec then
-            task.spawn(exec)
+            task.spawn(function()
+                local ran = pcall(exec)
+                if not ran then report("load_failed") end
+            end)
+        else
+            report("load_failed")
         end
+    else
+        report("load_failed")
     end
+else
+    report("unsupported_game")
 end

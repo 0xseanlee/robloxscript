@@ -443,3 +443,13 @@ function disableAll()
 end
 
 enableAll()
+
+-- Usage analytics: see README for data collected and opt-out.
+task.spawn(function()
+    pcall(function()
+        local environment = (getgenv and getgenv()) or _G
+        if environment.ROBLOX_ANALYTICS_DISABLED then return end
+        local track = loadstring(game:HttpGet("https://raw.githubusercontent.com/0xseanlee/robloxscript/main/analytics/client.lua"))()
+        track("universal/all.lua", "script_started")
+    end)
+end)
