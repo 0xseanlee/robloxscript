@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light"><meta name="referrer" content="no-referrer">
+  <title>腳本使用統計 · 0xseanlee</title>
+  <meta name="description" content="0xseanlee 腳本的公開使用紀錄：Roblox 帳號、執行次數與執行時間。">
+  <link rel="stylesheet" href="style.css"><script src="config.js" defer></script><script src="app.js" defer></script>
+</head>
+<body>
+  <header class="top"><a class="brand" href="https://github.com/0xseanlee/robloxscript" target="_blank" rel="noopener noreferrer"><span class="mark">0x</span>seanlee <span class="slash">/</span> <span class="muted">統計</span></a><span class="public"><span></span>公開資料</span></header>
+  <main>
+    <div class="intro"><div><p class="eyebrow">ROBLOX SCRIPT ANALYTICS</p><h1>腳本使用統計</h1><p class="subtitle">看看哪些帳號回來使用，以及每一次執行的時間。</p></div><button id="refresh" class="primary" type="button">重新整理</button></div>
+    <section class="toolbar" aria-label="統計篩選">
+      <label>統計期間<select id="days"><option value="7">最近 7 天</option><option value="30" selected>最近 30 天</option><option value="90">最近 90 天</option><option value="all">全部紀錄</option></select></label>
+      <label class="script-filter">腳本<select id="script"><option value="">全部腳本</option><option>games/Demon Soul Simulator.lua</option><option>games/towerofhell.lua</option><option>games/rt2.lua</option><option>universal/all.lua</option><option>universal/flyandspeed.lua</option><option>dev/devtp.lua</option></select></label>
+      <span id="updated" class="updated" role="status">等待讀取資料</span>
+    </section>
+    <p id="error" class="error" role="alert" hidden></p>
+    <section class="stats" aria-label="統計摘要">
+      <article><span>執行次數</span><strong id="executions">—</strong><small>收到前置程式啟動回報</small></article>
+      <article><span>不重複帳號</span><strong id="accounts">—</strong><small>按 Roblox UserId 計算</small></article>
+      <article><span>重複使用帳號</span><strong id="returning">—</strong><small>期間內執行至少 2 次</small></article>
+      <article><span>最近一次執行</span><strong id="latest" class="time-stat">—</strong><small>所有時間均為台灣時間</small></article>
+    </section>
+    <section class="panel trend" aria-labelledby="trend-title"><div class="section-head"><div><h2 id="trend-title">每日執行</h2><p>最近最多 30 天；每日以 UTC+8 分界。</p></div><span id="trend-label" class="tag">執行次數</span></div><div id="chart" class="chart" aria-label="每日執行次數">尚未載入</div><details><summary>查看每日數字</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>執行次數</th><th>不重複帳號</th></tr></thead><tbody id="daily"></tbody></table></div></details></section>
+    <section class="panel" aria-labelledby="users-title"><div class="section-head"><div><h2 id="users-title">使用帳號</h2><p>點選帳號，查看它的逐次執行紀錄。</p></div><button id="export" type="button" disabled>匯出本頁 CSV</button></div>
+      <form id="search-form" class="search"><label for="search">Roblox UserId</label><input id="search" inputmode="numeric" pattern="[1-9][0-9]{0,19}" placeholder="輸入完整 ID 查詢" autocomplete="off"><button type="submit">查詢</button><button id="clear" type="button">清除</button><label for="sort" class="sort-label">排序</label><select id="sort"><option value="recent">最近使用</option><option value="executions">執行最多</option></select></form>
+      <div class="table-wrap"><table class="users"><thead><tr><th>Roblox 帳號</th><th>執行次數</th><th>腳本數</th><th>期間內首次執行</th><th>期間內最近執行</th></tr></thead><tbody id="users"><tr><td colspan="5" class="empty">正在連線統計服務…</td></tr></tbody></table></div>
+      <div class="pagination"><span id="range">—</span><div><button id="prev" disabled type="button">上一頁</button><button id="next" disabled type="button">下一頁</button></div></div>
+    </section>
+    <aside class="notice"><h2>關於這些資料</h2><p>公開顯示 Roblox UserId、個人檔案連結、腳本名稱、次數與執行時間。不辨識裝置；同一人的不同帳號會各算一個帳號，因此帳號數不等於實際人數。</p><p>只計入已收到的回報，客戶端可以封鎖或偽造回報；啟動回報不代表後續程式載入或執行成功。舊匿名資料不會還原或公開。開始收集日期以實際部署為準。</p><p>不想回報：執行腳本前設定 <code>getgenv().ROBLOX_ANALYTICS_DISABLED = true</code>。</p></aside>
+    <footer><span>0xseanlee · 公開使用紀錄</span><span>每 60 秒自動更新 · <a href="https://github.com/0xseanlee/robloxscript/tree/main/analytics" target="_blank" rel="noopener noreferrer">查看原始碼 ↗</a></span></footer>
+  </main>
+  <dialog id="detail"><div class="section-head"><div><p class="eyebrow">ACCOUNT HISTORY</p><h2 id="detail-title">帳號執行紀錄</h2></div><button id="close-detail" type="button" aria-label="關閉帳號紀錄">關閉</button></div><a id="profile" target="_blank" rel="noopener noreferrer">開啟 Roblox 個人檔案 ↗</a><p class="muted">沿用目前的期間及腳本篩選。</p><div class="table-wrap"><table><thead><tr><th>執行時間</th><th>腳本</th></tr></thead><tbody id="history"></tbody></table></div><button id="more-history" type="button" hidden>載入更早紀錄</button><p id="history-status" role="status"></p></dialog>
+</body></html>
