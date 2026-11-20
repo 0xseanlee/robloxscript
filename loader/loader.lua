@@ -1,5 +1,33 @@
+
 local Players = game:GetService("Players")
 local HttpService = game:GetService("HttpService")
+local VirtualUser = game:GetService("VirtualUser")
+
+-- Anti-AFK
+local environment = (getgenv and getgenv()) or _G
+
+local function enableAntiAFK()
+    local old = environment.SEAN_ANTI_AFK
+    if old and old.Connected then
+        return
+    end
+
+    local player = Players.LocalPlayer
+    if not player then
+        Players:GetPropertyChangedSignal("LocalPlayer"):Wait()
+        player = Players.LocalPlayer
+    end
+
+    environment.SEAN_ANTI_AFK =
+        player.Idled:Connect(function()
+            pcall(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new(0, 0))
+            end)
+        end)
+end
+
+task.spawn(enableAntiAFK)
 
 local DiscordInvite = "https://discord.gg/mK9XWyV5Q2"
 
@@ -11,12 +39,10 @@ local function openDiscordInvite()
         local opened, result = pcall(openUrl, DiscordInvite)
         if opened and result ~= false then return true end
     end
-
     local opened = pcall(function()
         game:GetService("BrowserService"):OpenBrowserWindow(DiscordInvite)
     end)
     if opened then return true end
-
     -- Discord desktop can open its invite window through the local RPC endpoint.
     local httpRequest = environment.request or environment.http_request
         or (syn and syn.request) or (http and http.request)
@@ -57,7 +83,6 @@ local function showDiscordPrompt()
     gui.IgnoreGuiInset = true
     gui.DisplayOrder = 10000
     gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
     local mounted = pcall(function()
         gui.Parent = (gethui and gethui()) or game:GetService("CoreGui")
     end)
