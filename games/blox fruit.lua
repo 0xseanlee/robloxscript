@@ -1,5 +1,13 @@
 --the is deObfuscation REDz hub file and Rewrite by 0xseanlee 
 --join the discord: https://0xseanlee.me/discord
+-- Standalone Lua 5.1 / Luau source reconstructed from the companion result.luac.
+-- v4: bilingual 0xseanlee interface, current/legacy quest HUD support and guarded farming.
+-- Bypasses the damaged LuaDec text; decoded constants and instructions are below.
+-- No binary loader or external VM module is needed. Original game HTTP dependencies remain.
+-- Execution fidelity is relative to the recovered chunk, not the unavailable original source.
+-- Chunk SHA-256: 1e361c4fd7465b5fda4853ab44c89f9c405a37d5f5e8e1221ef980c7ef39d0e9
+-- Small source-level Lua 5.1 instruction runner. Each invocation owns its registers.
+-- Shared upvalue cells survive returns, CLOSE, recursion, and coroutine suspension.
 local hostUnpack = unpack or table.unpack
 local hostSelect, hostType = select, type
 local hostGetfenv, hostSetfenv = getfenv, setfenv
@@ -58775,6 +58783,31 @@ local function installQuestControllers(pool, env)
         end
     end
     for _,proto in ipairs(pool) do
+        if proto.path=="0_203" then
+            proto.native=function(current,enabled)
+                if enabled then return end
+                current._G.StopTween=true
+                pcall(function()
+                    local waitFor=current.wait or (current.task and current.task.wait)
+                    if type(waitFor)=="function" then waitFor() end
+                    local player=current.game:GetService("Players").LocalPlayer
+                    local root=player and child(player.Character,"HumanoidRootPart")
+                    if root==nil then return end
+                    if type(current.topos)=="function" then current.topos(root.CFrame) end
+                    if type(waitFor)=="function" then waitFor() end
+                    root=player and child(player.Character,"HumanoidRootPart")
+                    local clip=child(root,"BodyClip")
+                    if clip then clip:Destroy() end
+                end)
+                current._G.StopTween=false;current._G.Clip=false
+            end
+        end
+        if proto.path=="0_453" then
+            proto.precondition=function(current)
+                local player=current.game:GetService("Players").LocalPlayer
+                return player~=nil and player.Character~=nil
+            end
+        end
         if proto.path=="0_264_0" then proto.native=function() return run(controllers.normal) end end
         if proto.path=="0_89_0" then proto.native=function() return run(controllers.newIsland) end end
         if proto.path=="0_69_0" then
