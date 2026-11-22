@@ -58416,14 +58416,24 @@ local function installLocalization(pool,env,dictionary)
     local previous=env.__MoonSecUI
     if type(previous)=="table" and type(previous.stop)=="function" then pcall(previous.stop) end
     local function canonical(value)
+        if value=="Auto" or value=="auto" or value=="自動" then return "auto" end
         if value=="English" or value=="en" then return "en" end
         if value=="繁體中文" or value=="zh-TW" then return "zh-TW" end
     end
-    state.language=canonical(env.__MoonSecUILanguage) or "zh-TW"
+    local function detectLanguage()
+        local ok,locale=pcall(function() return env.game:GetService("Players").LocalPlayer.LocaleId end)
+        if not ok or type(locale)~="string" then
+            ok,locale=pcall(function() return env.game:GetService("LocalizationService").RobloxLocaleId end)
+        end
+        if ok and type(locale)=="string" then return locale:lower():match("^zh") and "zh-TW" or "en" end
+        return "zh-TW"
+    end
+    state.mode=canonical(env.__MoonSecUILanguage) or "auto"
     if type(env.readfile)=="function" then
         local ok,value=pcall(env.readfile,"0xseanlee-ui-language.txt")
-        if ok then state.language=canonical(value) or state.language end
+        if ok then state.mode=canonical(value) or state.mode end
     end
+    state.language=state.mode=="auto" and detectLanguage() or state.mode
     local extras={
         ["Info"]={"Info","資訊"},
         ["Creator"]={"Creator","創作者"},
@@ -58494,12 +58504,12 @@ local function installLocalization(pool,env,dictionary)
         state.libraries[lib]=#instances
     end
     function state.setLanguage(value)
-        local language=canonical(value)
-        if not language then return false end
-        state.language=language;env.__MoonSecUILanguage=language
+        local mode=canonical(value)
+        if not mode then return false end
+        state.mode=mode;state.language=mode=="auto" and detectLanguage() or mode;env.__MoonSecUILanguage=mode
         for lib in pairs(state.libraries) do state.scan(lib) end
         for _,record in ipairs(state.records) do render(record) end
-        if type(env.writefile)=="function" then pcall(env.writefile,"0xseanlee-ui-language.txt",language) end
+        if type(env.writefile)=="function" then pcall(env.writefile,"0xseanlee-ui-language.txt",mode) end
         return true
     end
     function state.stop()
@@ -58539,7 +58549,7 @@ local function installLocalization(pool,env,dictionary)
         if title=="Settings" then
             tab:AddSection({"Interface"})
             tab:AddDropdown({Name="UI language",Description="Choose your interface language.",
-                Options={"繁體中文","English"},Default=state.language=="en" and "English" or "繁體中文",
+                Options={"Auto","繁體中文","English"},Default=state.mode=="auto" and "Auto" or (state.language=="en" and "English" or "繁體中文"),
                 Callback=function(value) state.setLanguage(value) end})
         end
     end
@@ -58553,6 +58563,44 @@ local function installLocalization(pool,env,dictionary)
             branded[1]=nil;branded[2]=nil;branded.Name=nil
             branded.Title="0xseanlee Hub";branded.SubTitle="by 0xseanlee"
             local window=original(self,branded,...)
+            state.window=window;state.visible=true
+            local nativeMinimize=window.Minimize
+            local function frame()
+                for _,entry in ipairs(rawget(lib,"Instances") or {}) do
+                    local object=entry.Instance
+                    local ok,match=pcall(function() return object.Name=="Hub" end)
+                    if ok and match then return object end
+                end
+            end
+            function state.setVisible(visible)
+                visible=not not visible
+                local root=frame()
+                if root then root.Visible=visible
+                elseif state.visible~=visible and type(nativeMinimize)=="function" then nativeMinimize(window) end
+                state.visible=visible
+                return visible
+            end
+            function state.show() return state.setVisible(true) end
+            function state.hide() return state.setVisible(false) end
+            function state.toggle() return state.setVisible(not state.visible) end
+            window.Minimize=function(_,hidden)
+                if type(hidden)=="boolean" then return state.setVisible(not hidden) end
+                return state.toggle()
+            end
+            window.CloseBtn=function() return state.hide() end
+            local originalDialog=rawget(window,"Dialog")
+            if type(originalDialog)=="function" then
+                window.Dialog=function(self,config,...)
+                    if type(config)=="table" and (config.Title=="Close" or config[1]=="Close") then return state.hide() end
+                    return originalDialog(self,config,...)
+                end
+            end
+            pcall(function()
+                local connection=env.game:GetService("UserInputService").InputBegan:Connect(function(input,processed)
+                    if not processed and input.KeyCode==env.Enum.KeyCode.RightShift then state.toggle() end
+                end)
+                state.connections[#state.connections+1]=connection
+            end)
             local makeTab=window.MakeTab
             window.MakeTab=function(self,first,second,...)
                 local cfg=type(first)=="table" and first or second
@@ -58593,6 +58641,9 @@ local function installLocalization(pool,env,dictionary)
         end
     end
     env.__MoonSecUI=state
+    for _,proto in ipairs(pool) do
+        if proto.path=="0_320" then proto.native=function() if state.toggle then return state.toggle() end end end
+    end
     if type(env.getgenv)=="function" then
         local ok,shared=pcall(env.getgenv)
         if ok and type(shared)=="table" then shared.__MoonSecUI=state end
